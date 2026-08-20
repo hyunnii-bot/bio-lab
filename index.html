@@ -506,26 +506,103 @@ button{
 }
 
 
-/* ===== iPad 한 화면 맞춤: 현미경 조작부 축소 ===== */
+/* ===== iPad 한 화면 맞춤: 현미경 조작 화면 전체 재배치 ===== */
 @media (min-width:700px) and (max-width:1180px){
-  body{overflow-x:hidden}
-  .scope{
-    transform:scale(.84);
-    transform-origin:top center;
-    margin-bottom:-84px;
+  /* 현미경 단계에서는 오른쪽 긴 설명 패널이 화면폭을 잡아먹지 않도록 숨김.
+     실험 절차 안내는 현미경 화면 하단 HUD에 계속 표시됨. */
+  main{grid-template-columns:1fr}
+  .side{display:none}
+
+  .scopeArea{
+    padding:10px;
+    gap:8px;
+    overflow:hidden;
   }
-  .viewer,.preview{
-    max-width:92vw;
+
+  .scopeWrap{
+    min-width:0;
+    min-height:0;
+    overflow:visible;
   }
-}
-@media (orientation:landscape) and (min-width:700px) and (max-width:1180px){
+
   .scope{
-    transform:scale(.76);
-    transform-origin:top center;
-    margin-bottom:-125px;
+    margin-left:0;
+    transform-origin:center center;
+  }
+
+  .viewerPanel{
+    min-width:0;
+    min-height:0;
+    padding:8px;
+  }
+
+  .preview{
+    width:min(300px,42vw);
+  }
+
+  .hud{
+    left:10px;
+    right:10px;
+    bottom:8px;
+    padding:9px 11px;
+  }
+
+  .hud b{font-size:12px}
+  .hud p{font-size:11px;line-height:1.35}
+
+  .stageControls{
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-top:8px;
   }
 }
 
+/* iPad 가로: 현미경 + 시야를 좌우 한 화면에 */
+@media (orientation:landscape) and (min-width:700px) and (max-width:1180px){
+  .app{grid-template-rows:54px 1fr 28px}
+  header{padding:0 14px}
+  footer{padding:0 10px}
+
+  .scopeArea{
+    grid-template-columns:1.18fr .82fr;
+    align-items:center;
+  }
+
+  .scope{
+    transform:scale(.78);
+  }
+
+  .preview{
+    width:min(285px,34vw);
+  }
+}
+
+/* iPad 세로: 현미경을 위, 관찰 시야를 아래로 배치 */
+@media (orientation:portrait) and (min-width:700px) and (max-width:1180px){
+  .app{grid-template-rows:56px 1fr 30px}
+
+  .scopeArea{
+    grid-template-columns:1fr;
+    grid-template-rows:minmax(430px,52%) minmax(310px,48%);
+    align-items:center;
+  }
+
+  .scope{
+    transform:scale(.80);
+  }
+
+  .preview{
+    width:min(270px,42vw);
+  }
+
+  .viewerPanel{
+    justify-content:flex-start;
+    padding-top:12px;
+  }
+
+  .focusReadout{margin-top:8px}
+  .stageControls{margin-top:7px}
+}
 </style>
 </head>
 <body>
