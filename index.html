@@ -505,6 +505,27 @@ button{
   .prepBox{min-height:280px}
 }
 
+
+/* ===== iPad 한 화면 맞춤: 현미경 조작부 축소 ===== */
+@media (min-width:700px) and (max-width:1180px){
+  body{overflow-x:hidden}
+  .scope{
+    transform:scale(.84);
+    transform-origin:top center;
+    margin-bottom:-84px;
+  }
+  .viewer,.preview{
+    max-width:92vw;
+  }
+}
+@media (orientation:landscape) and (min-width:700px) and (max-width:1180px){
+  .scope{
+    transform:scale(.76);
+    transform-origin:top center;
+    margin-bottom:-125px;
+  }
+}
+
 </style>
 </head>
 <body>
