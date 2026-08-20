@@ -453,6 +453,58 @@ footer{display:flex;align-items:center;justify-content:space-between;padding:0 1
   .bananaStage{grid-template-columns:1fr}
 }
 
+
+/* ===== iPad / Touch 최적화 ===== */
+html{
+  -webkit-text-size-adjust:100%;
+  touch-action:manipulation;
+}
+button,.reagentBtn,.stainBtn,.introAction,.prepNext,.objBtn,.moveBtn{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+}
+button{
+  min-height:44px;
+}
+.specimen,.sample,.slideCard,[draggable="true"]{
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.knob,.coarseKnob,.fineKnob,.dial{
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+}
+@media (hover:none) and (pointer:coarse){
+  button,.reagentBtn,.stainBtn,.introAction,.prepNext{
+    min-height:48px;
+    font-size:max(13px,1.5vw);
+  }
+  .objBtn,.moveBtn{
+    min-width:48px;
+    min-height:48px;
+  }
+  .reagentBtn:hover,.stainBtn:hover,.introAction:hover{transform:none}
+}
+@media (min-width:700px) and (max-width:1180px){
+  body{overflow-x:hidden}
+  .introCard,.prepCard{width:min(96%,1000px);max-height:94vh;overflow:auto}
+  .prepGrid{gap:10px}
+  .prepBox{min-height:300px}
+  .lab{min-width:0}
+}
+@media (orientation:landscape) and (min-width:700px) and (max-width:1180px){
+  .introOverlay,.prepOverlay{padding:12px}
+  .introCard,.prepCard{padding:16px}
+  .bananaStage{margin-top:12px}
+  .bananaVisual{min-height:260px}
+  .prepGrid{margin-top:12px}
+  .prepBox{min-height:280px}
+}
+
 </style>
 </head>
 <body>
@@ -1128,6 +1180,116 @@ document.querySelectorAll("#final button").forEach(b=>b.onclick=()=>b.classList.
 $("mirror").style.setProperty("--mirror-r",mirrorAngle+"deg");
 document.documentElement.style.setProperty("--light-opacity",mirrorLight);
 update();
+</script>
+
+<div id="touchHint" style="display:none;position:fixed;right:12px;bottom:12px;z-index:210;
+background:#071218e8;color:#d9edf2;border:1px solid #34515c;border-radius:10px;
+padding:8px 10px;font-size:11px;line-height:1.35;box-shadow:0 8px 22px #0006">
+iPad: 손가락으로 드래그·탭하여 조작하세요.
+</div>
+
+<script>
+/* ===== Pointer Events bridge: mouse + iPad touch/Apple Pencil ===== */
+(function(){
+  const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  if(coarse && document.getElementById("touchHint")){
+    const h=document.getElementById("touchHint");
+    h.style.display="block";
+    setTimeout(()=>h.style.display="none",4200);
+  }
+
+  let active=null, moved=false, startX=0, startY=0;
+
+  function mouseLike(type,e,target){
+    const ev=new MouseEvent(type,{
+      bubbles:true,cancelable:true,view:window,
+      clientX:e.clientX,clientY:e.clientY,
+      screenX:e.screenX,screenY:e.screenY,
+      button:0,buttons:type==="mouseup"?0:1
+    });
+    target.dispatchEvent(ev);
+  }
+
+  document.addEventListener("pointerdown",function(e){
+    if(e.pointerType==="mouse") return;
+    const t=e.target.closest(
+      '.specimen,.sample,.slideCard,[draggable="true"],.knob,.coarseKnob,.fineKnob,.dial'
+    );
+    if(!t) return;
+    active=t;moved=false;startX=e.clientX;startY=e.clientY;
+    try{t.setPointerCapture(e.pointerId)}catch(_){}
+    e.preventDefault();
+    mouseLike("mousedown",e,t);
+  },{passive:false});
+
+  document.addEventListener("pointermove",function(e){
+    if(e.pointerType==="mouse" || !active) return;
+    if(Math.hypot(e.clientX-startX,e.clientY-startY)>4)moved=true;
+    e.preventDefault();
+    mouseLike("mousemove",e,active);
+  },{passive:false});
+
+  function finish(e){
+    if(e.pointerType==="mouse" || !active) return;
+    e.preventDefault();
+    mouseLike("mouseup",e,active);
+    active=null;
+  }
+  document.addEventListener("pointerup",finish,{passive:false});
+  document.addEventListener("pointercancel",finish,{passive:false});
+
+  // HTML5 drag-and-drop is unreliable on iPad. If a draggable specimen is tapped,
+  // keep the existing click/double-click fallback available and avoid page scrolling.
+  document.querySelectorAll('[draggable="true"]').forEach(el=>{
+    el.addEventListener("touchstart",e=>{}, {passive:true});
+  });
+})();
+</script>
+<script>
+/* ===== iPad 표본 손가락 드래그 ===== */
+(function(){
+  const candidates=[...document.querySelectorAll('[draggable="true"], .specimen, .sample, .slideCard')];
+  candidates.forEach(el=>{
+    let ghost=null, sx=0, sy=0, dragging=false;
+
+    el.addEventListener("pointerdown",e=>{
+      if(e.pointerType==="mouse")return;
+      sx=e.clientX;sy=e.clientY;dragging=false;
+    },{passive:true});
+
+    el.addEventListener("pointermove",e=>{
+      if(e.pointerType==="mouse")return;
+      if(!dragging && Math.hypot(e.clientX-sx,e.clientY-sy)>8){
+        dragging=true;
+        ghost=el.cloneNode(true);
+        ghost.removeAttribute("id");
+        ghost.style.cssText+=";position:fixed;z-index:9999;pointer-events:none;opacity:.82;"+
+          "width:"+el.getBoundingClientRect().width+"px;";
+        document.body.appendChild(ghost);
+      }
+      if(ghost){
+        e.preventDefault();
+        ghost.style.left=(e.clientX-ghost.offsetWidth/2)+"px";
+        ghost.style.top=(e.clientY-ghost.offsetHeight/2)+"px";
+      }
+    },{passive:false});
+
+    el.addEventListener("pointerup",e=>{
+      if(e.pointerType==="mouse")return;
+      if(ghost){ghost.remove();ghost=null}
+      if(!dragging)return;
+
+      const target=document.elementFromPoint(e.clientX,e.clientY);
+      const stage=target && target.closest('.stage,.stagePlate,.dropzone,.dropZone,#stage,#stagePlate');
+      if(stage){
+        // Reuse the app's own double-click/click mounting fallback.
+        el.dispatchEvent(new MouseEvent("dblclick",{bubbles:true,cancelable:true,clientX:e.clientX,clientY:e.clientY}));
+        el.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true,clientX:e.clientX,clientY:e.clientY}));
+      }
+      dragging=false;
+    },{passive:false});
+  });
+})();
 </script>
 </body>
 </html>
